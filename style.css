@@ -1,0 +1,642 @@
+/* ==========================================================================
+   Zero Merge Retro 8-Bit Style Settings — Mobile-First App Layout
+   ========================================================================== */
+
+:root {
+    --bg-color: #0b0813;
+    --border-color: #ffffff;
+    --shadow-color: #3e265c;
+    
+    --color-red: #ff3366;
+    --color-red-shadow: #b3002d;
+    --color-blue: #00e5ff;
+    --color-blue-shadow: #008ca3;
+    
+    --color-gold: #ffcc00;
+    
+    --color-add: #39ff14;
+    --color-sub: #ff073a;
+    --color-mul: #00f0ff;
+    --color-div: #ff007f;
+    --color-pow: #cc00ff;
+
+    --font-pixel: 'Press Start 2P', monospace;
+    --font-japanese: 'DotGothic16', monospace;
+
+    /* Safe area insets for notched devices */
+    --sai-top: env(safe-area-inset-top, 0px);
+    --sai-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    image-rendering: pixelated;
+    /* Prevent mobile tap highlight */
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: manipulation;
+}
+
+body {
+    background-color: var(--bg-color);
+    /* CRT走査線 & 微細グリッドエフェクト */
+    background-image: 
+        linear-gradient(rgba(18, 16, 26, 0.45) 50%, rgba(0, 0, 0, 0.3) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04));
+    background-size: 100% 4px, 6px 100%;
+    color: #ffffff;
+    font-family: var(--font-japanese);
+}
+
+/* ==========================================================================
+   App Container — Full viewport flex column, no scroll
+   ========================================================================== */
+#app-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 4px calc(4px + var(--sai-bottom)) 4px;
+    padding-top: calc(4px + var(--sai-top));
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Header — Ultra compact
+   ========================================================================== */
+header {
+    text-align: center;
+    flex-shrink: 0;
+    padding: 2px 0;
+}
+
+.logo {
+    font-family: var(--font-pixel);
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    line-height: 1;
+}
+
+.logo-zero {
+    color: var(--color-blue);
+    text-shadow: 2px 2px 0px #005a66;
+}
+
+.logo-merge {
+    color: var(--color-red);
+    text-shadow: 2px 2px 0px #80001a;
+    margin-left: 6px;
+}
+
+/* ==========================================================================
+   Status Bar — Horizontal: SCORE | NEXT | HOLD | Buttons
+   ========================================================================== */
+.status-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+    max-width: 500px;
+    padding: 3px 0;
+}
+
+.status-item {
+    background: #000;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+    gap: 2px;
+}
+
+.score-item {
+    flex: 1.5;
+}
+
+.next-item, .hold-item {
+    flex: 1;
+    cursor: default;
+}
+
+.hold-item {
+    cursor: pointer;
+}
+
+.hold-item:active {
+    background: #1a1526;
+    border-color: var(--color-gold);
+}
+
+.status-label {
+    font-family: var(--font-pixel);
+    font-size: 0.45rem;
+    color: #00f0ff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.status-value {
+    font-family: var(--font-pixel);
+    font-size: 1rem;
+    color: #fff;
+    text-shadow: 2px 2px 0px #444;
+    line-height: 1.2;
+}
+
+.best-label {
+    font-family: var(--font-pixel);
+    font-size: 0.4rem;
+    color: #a1a3b5;
+    line-height: 1;
+}
+
+.best-label span {
+    color: var(--color-gold);
+}
+
+/* Mini ball previews in status bar */
+.mini-preview-container {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    background: #111;
+    position: relative;
+    overflow: hidden;
+}
+
+.ball-preview {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    position: relative;
+    color: #fff;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+}
+
+.op-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    background: #000;
+    border: 1.5px solid #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.5rem;
+    font-family: var(--font-pixel);
+    color: #fff;
+}
+
+.ball-preview.empty {
+    border: 2px dashed rgba(255, 255, 255, 0.15) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ball-preview.empty span {
+    display: none !important;
+}
+
+/* CRT overlay on mini previews */
+.mini-preview-container::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    background: 
+        linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 25%, rgba(255,255,255,0) 50%),
+        repeating-linear-gradient(rgba(18,16,26,0) 0px, rgba(18,16,26,0) 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+}
+
+/* Status bar icon buttons */
+.status-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    background: #000;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px var(--shadow-color);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 0;
+}
+
+.icon-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--shadow-color);
+    background: #221a36;
+}
+
+.lang-btn {
+    font-size: 0.55rem;
+    color: var(--color-gold);
+    border-color: var(--color-gold);
+    letter-spacing: 0;
+}
+
+.icon-btn svg {
+    filter: drop-shadow(1px 1px 0px #000);
+}
+
+/* ==========================================================================
+   Canvas Area — Fill remaining height
+   ========================================================================== */
+.canvas-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 0; /* critical for flex shrinking */
+    overflow: hidden;
+}
+
+.canvas-wrapper {
+    position: relative;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--shadow-color);
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    max-height: 100%;
+    max-width: 100%;
+}
+
+/* ブラウン管ガラス反射 & 走査線オーバーレイ */
+.canvas-border-effect {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    background: 
+        linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.008) 18%, rgba(255,255,255,0) 45%),
+        radial-gradient(circle at 50% 18%, rgba(255,255,255,0.008) 0%, rgba(255,255,255,0) 55%),
+        repeating-linear-gradient(rgba(18,16,26,0) 0px, rgba(18,16,26,0) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px),
+        radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.15) 100%);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.4), inset 0 0 30px rgba(147,51,234,0.02);
+}
+
+#game-canvas {
+    background: #000;
+    display: block;
+    cursor: crosshair;
+    /* Canvas will be sized dynamically by JS to fill available space */
+}
+
+/* ==========================================================================
+   Modals — Shared
+   ========================================================================== */
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: #000;
+    border: 4px solid var(--border-color);
+    box-shadow: 10px 10px 0px var(--shadow-color);
+    padding: 24px 18px;
+    width: 94%;
+    max-width: 480px;
+    max-height: 88vh;
+    overflow-y: auto;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    font-family: var(--font-pixel);
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #ff3366;
+    text-shadow: 3px 3px 0px #000;
+}
+
+.modal-sub {
+    font-family: var(--font-japanese);
+    font-size: 1rem;
+    color: #00f0ff;
+    margin-bottom: 16px;
+    font-weight: bold;
+}
+
+.modal-body {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 18px;
+}
+
+.instruction-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #111;
+    border: 2px solid var(--border-color);
+    padding: 12px;
+}
+
+.step-num {
+    width: 26px;
+    height: 26px;
+    background: var(--color-blue);
+    border: 2px solid #fff;
+    color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.step-text {
+    font-family: var(--font-japanese);
+    font-size: 1rem;
+    color: #fff;
+    line-height: 1.5;
+    font-weight: bold;
+}
+
+.badge-inline {
+    padding: 2px 6px;
+    border: 1px solid #fff;
+    font-family: var(--font-japanese);
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #fff;
+}
+.badge-inline.red { background: var(--color-red); }
+.badge-inline.blue { background: var(--color-blue); }
+
+.modal-btn {
+    background: var(--color-gold);
+    border: 3px solid #fff;
+    box-shadow: 4px 4px 0px #000;
+    color: #000;
+    padding: 12px 32px;
+    font-family: var(--font-japanese);
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.modal-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 #000;
+}
+
+/* ゲームオーバーモーダル */
+.modal-content.border-red {
+    border-color: var(--color-red);
+    box-shadow: 10px 10px 0px #80001a;
+}
+
+.modal-content.border-red h2 {
+    color: var(--color-red);
+}
+
+.gameover-stats {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.stat-item {
+    flex: 1;
+    background: #111;
+    border: 2px solid var(--border-color);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 0.65rem;
+    color: #a1a3b5;
+    font-weight: bold;
+}
+
+.stat-val {
+    font-family: var(--font-pixel);
+    font-size: 1.1rem;
+}
+
+#final-score { color: #fff; }
+#final-best { color: var(--color-gold); }
+
+/* ==========================================================================
+   Rules Modal Content
+   ========================================================================== */
+.rules-summary {
+    color: #fff;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    border-bottom: 2px dashed rgba(255,255,255,0.2);
+    padding-bottom: 8px;
+    font-weight: bold;
+    text-align: left;
+}
+
+.rule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.rule-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.rule-item .badge {
+    width: 28px;
+    height: 28px;
+    background: #000;
+    border: 2px solid #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--font-pixel);
+    font-size: 0.8rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+}
+
+.op-add { color: var(--color-add); }
+.op-sub { color: var(--color-sub); }
+.op-mul { color: var(--color-mul); }
+.op-div { color: var(--color-div); }
+.op-pow { color: var(--color-pow); }
+
+.rule-desc {
+    display: flex;
+    flex-direction: column;
+}
+
+.rule-desc strong {
+    color: #00f0ff;
+    font-size: 0.95rem;
+}
+
+.rule-desc span {
+    color: #fff;
+    font-family: var(--font-pixel);
+    font-size: 0.75rem;
+}
+
+.rule-desc small {
+    color: #a1a3b5;
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+.highlight-rule {
+    color: var(--color-gold) !important;
+}
+
+.text-red { color: var(--color-red); font-weight: bold; }
+.text-blue { color: var(--color-blue); font-weight: bold; }
+.text-gold { color: var(--color-gold); font-weight: bold; }
+
+.zero-clear-tip {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 2px dashed rgba(255,255,255,0.2);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    color: var(--color-gold);
+    font-size: 0.9rem;
+    line-height: 1.3;
+    font-weight: bold;
+    text-align: left;
+    width: 100%;
+}
+
+.sparkle-icon {
+    font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Desktop Overrides (wider screens)
+   ========================================================================== */
+@media (min-width: 600px) {
+    .logo {
+        font-size: 1.5rem;
+    }
+
+    .status-bar {
+        gap: 8px;
+    }
+
+    .status-item {
+        padding: 6px 10px;
+    }
+
+    .status-label {
+        font-size: 0.55rem;
+    }
+
+    .status-value {
+        font-size: 1.3rem;
+    }
+
+    .mini-preview-container {
+        width: 50px;
+        height: 50px;
+    }
+
+    .ball-preview {
+        width: 38px;
+        height: 38px;
+        font-size: 0.8rem;
+    }
+
+    .op-badge {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+    }
+
+    .icon-btn {
+        width: 40px;
+        height: 40px;
+    }
+}

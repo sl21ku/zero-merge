@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Zero Merge - Math Physics Puzzle</title>
+    <!-- Google Fonts for Retro 8-bit Arcade -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <span class="logo-zero">ZERO</span><span class="logo-merge">MERGE</span>
+            </div>
+        </header>
+
+        <!-- Status Bar: SCORE | NEXT | HOLD | Buttons -->
+        <div class="status-bar">
+            <div class="status-item score-item">
+                <div class="status-label">SCORE</div>
+                <div id="score-val" class="status-value">0</div>
+                <div class="best-label">BEST: <span id="best-score-val">0</span></div>
+            </div>
+
+            <div class="status-item next-item">
+                <div class="status-label">NEXT</div>
+                <div class="mini-preview-container">
+                    <div id="next-ball-preview" class="ball-preview">
+                        <span id="next-val-text">1</span>
+                        <span id="next-op-badge" class="op-badge">+</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-item hold-item" id="hold-click-zone">
+                <div class="status-label">HOLD</div>
+                <div class="mini-preview-container">
+                    <div id="hold-ball-preview" class="ball-preview empty">
+                        <span id="hold-val-text"></span>
+                        <span id="hold-op-badge" class="op-badge" style="display:none;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-buttons">
+                <button id="btn-lang" class="icon-btn lang-btn" aria-label="Language">EN</button>
+                <button id="btn-sound" class="icon-btn" aria-label="Sound toggle">
+                    <svg id="sound-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                </button>
+                <button id="btn-help" class="icon-btn" aria-label="Rules">?</button>
+                <button id="btn-restart" class="icon-btn" aria-label="Restart">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <div class="canvas-area">
+            <div class="canvas-wrapper">
+                <div class="canvas-border-effect"></div>
+                <canvas id="game-canvas" width="450" height="650"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Modal -->
+    <div id="modal-start" class="modal active">
+        <div class="modal-content">
+            <h2 data-i18n="start_title">Welcome to Zero Merge!</h2>
+            <p class="modal-sub" data-i18n="start_sub">Math Physics Puzzle</p>
+            <div class="modal-body">
+                <div class="instruction-step">
+                    <div class="step-num">1</div>
+                    <div class="step-text" data-i18n="start_step1"><strong>Red balls = positive numbers</strong>, <strong>Blue balls = negative numbers</strong>. Only the absolute value is shown on each ball. Aim and drop!</div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">2</div>
+                    <div class="step-text" data-i18n="start_step2">Balls with the <strong>same operator symbol</strong> merge on contact and calculate the result.<br>e.g. <span class="badge-inline red">3(×)</span> and <span class="badge-inline blue">2(×)</span> share <span class="badge-inline" style="background:#3b82f6;">×</span>, so they merge: <b>3 × (-2) = -6</b> (blue 6).</div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">3</div>
+                    <div class="step-text" data-i18n="start_step3"><strong>Calculation order:</strong> The ball already in the container (older) becomes the <b>left operand</b>, and the incoming ball (newer) becomes the <b>right operand</b>. The formula is displayed on screen!</div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">4</div>
+                    <div class="step-text" data-i18n="start_step4">After merging, the operator evolves in a fixed cycle: <b>+ → - → × → ÷ → ^ → +</b>. Plan your drops to create massive chain combos!</div>
+                </div>
+            </div>
+            <button id="btn-start-game" class="modal-btn" data-i18n="start_btn">START GAME</button>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="modal-rules" class="modal">
+        <div class="modal-content">
+            <h2 data-i18n="rules_title">Merge & Operator Rules</h2>
+            <p class="rules-summary" data-i18n="rules_summary">Balls with the <strong>same operator</strong> merge! (Older ball = left, Newer ball = right)<br>After merging, operator evolves: <b>+ → - → × → ÷ → ^ → +</b>. Plan your chains!</p>
+            <div class="rule-list">
+                <div class="rule-item">
+                    <span class="badge op-add">+</span>
+                    <div class="rule-desc">
+                        <strong data-i18n="rule_add_name">Addition (Add)</strong>
+                        <span>A + B</span>
+                        <small data-i18n="rule_add_ex">e.g. <span class="text-red">Red 3</span> + <span class="text-blue">Blue 3</span> = <span class="text-gold">0 (vanish!)</span></small>
+                    </div>
+                </div>
+                <div class="rule-item">
+                    <span class="badge op-sub">-</span>
+                    <div class="rule-desc">
+                        <strong data-i18n="rule_sub_name">Subtraction (Sub)</strong>
+                        <span>A - B</span>
+                        <small data-i18n="rule_sub_ex">e.g. <span class="text-red">Red 3</span> - <span class="text-red">Red 3</span> = <span class="text-gold">0 (vanish!)</span></small>
+                    </div>
+                </div>
+                <div class="rule-item">
+                    <span class="badge op-mul">×</span>
+                    <div class="rule-desc">
+                        <strong data-i18n="rule_mul_name">Multiplication (Mul)</strong>
+                        <span>A × B</span>
+                        <small data-i18n="rule_mul_ex">e.g. <span class="text-blue">Blue 2</span> × <span class="text-blue">Blue 2</span> = <span class="text-red">Red 4</span></small>
+                    </div>
+                </div>
+                <div class="rule-item">
+                    <span class="badge op-div">÷</span>
+                    <div class="rule-desc">
+                        <strong data-i18n="rule_div_name">Division (Div)</strong>
+                        <span>A ÷ B</span>
+                        <small class="highlight-rule" data-i18n="rule_div_ex">e.g. <span class="text-red">Red 10</span> ÷ <span class="text-red">Red 3</span> = <span class="text-red">Red 3</span> <small>(10/3 ≈ 3)</small></small>
+                    </div>
+                </div>
+                <div class="rule-item">
+                    <span class="badge op-pow">^</span>
+                    <div class="rule-desc">
+                        <strong data-i18n="rule_pow_name">Power (Pow)</strong>
+                        <span>A<sup>B</sup></span>
+                        <small class="highlight-rule" data-i18n="rule_pow_ex">e.g. <span class="text-red">Red 2</span> ^ <span class="text-red">Red 3</span> = <span class="text-red">Red 8</span> <small>(2<sup>3</sup> = 8)</small></small>
+                    </div>
+                </div>
+            </div>
+            <div class="zero-clear-tip">
+                <span class="sparkle-icon">✨</span>
+                <span data-i18n="rules_annihilation"><strong>Annihilation:</strong> When the result equals <b>0</b>, the ball vanishes and frees up space!</span>
+            </div>
+            <button id="btn-close-rules" class="modal-btn" style="margin-top: 18px;" data-i18n="rules_close">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="modal">
+        <div class="modal-content border-red">
+            <h2 class="text-red">GAME OVER</h2>
+            <p class="modal-sub" data-i18n="gameover_sub">The balls exceeded the deadline!</p>
+            <div class="gameover-stats">
+                <div class="stat-item">
+                    <span class="stat-label" data-i18n="gameover_score">SCORE</span>
+                    <span id="final-score" class="stat-val">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label" data-i18n="gameover_best">BEST</span>
+                    <span id="final-best" class="stat-val">0</span>
+                </div>
+            </div>
+            <button id="btn-retry" class="modal-btn" data-i18n="gameover_retry">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
