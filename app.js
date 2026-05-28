@@ -509,8 +509,8 @@ class Ball {
 
     static calculateRadius(val) {
         const absVal = Math.abs(val);
-        // 基本半径 22px。値が大きくなると対数的に増大する
-        return 22 + 7.5 * Math.log(absVal + 1);
+        // 基本半径 22px。値が大きくなるにつれて球がより巨大化するよう成長係数を15.0に強化（難易度調整）
+        return 22 + 15.0 * Math.log(absVal + 1);
     }
 }
 
@@ -624,7 +624,7 @@ class Game {
         
         // ゲーム警告
         this.warningActive = false;
-        this.warningTimeLeft = 1.5; // 秒数
+        this.warningTimeLeft = 1.2; // 秒数（ゲームオーバー猶予を1.5sから1.2sに短縮して難易度向上）
         
         // UI更新
         document.getElementById('best-score-val').textContent = this.bestScore;
@@ -1274,7 +1274,7 @@ class Game {
             this.warningActive = false;
             this.alarmTimer = 0;
             // 回復は少し早めに
-            this.warningTimeLeft = Math.min(1.5, this.warningTimeLeft + dt * 2);
+            this.warningTimeLeft = Math.min(1.2, this.warningTimeLeft + dt * 2);
         }
     }
 
@@ -1314,7 +1314,7 @@ class Game {
         document.getElementById('score-val').textContent = "0";
         this.isGameOver = false;
         this.warningActive = false;
-        this.warningTimeLeft = 1.5;
+        this.warningTimeLeft = 1.2;
         this.hasRevivedThisGame = false;
         
         document.getElementById('modal-gameover').classList.remove('active');
@@ -1335,7 +1335,7 @@ class Game {
         // 3. Reset game over / warning state
         this.isGameOver = false;
         this.warningActive = false;
-        this.warningTimeLeft = 1.5;
+        this.warningTimeLeft = 1.2;
         this.hasRevivedThisGame = true;
         this.alarmTimer = 0;
         
