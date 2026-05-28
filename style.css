@@ -640,3 +640,24 @@ header {
         height: 40px;
     }
 }
+
+/* ==========================================================================
+   Google AdMob Support Spacing & Revive Button
+   ========================================================================== */
+.btn-revive-style {
+    background: var(--color-blue) !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+    margin-bottom: 12px;
+}
+
+.btn-revive-style:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 #000000;
+}
+
+/* Adjust application container layout to prevent bottom banner ad overlap */
+#app-container.has-banner-ad {
+    padding-bottom: calc(54px + var(--sai-bottom)) !important;
+}
+

@@ -38,6 +38,7 @@ const I18N = {
             gameover_score: 'SCORE',
             gameover_best: 'BEST',
             gameover_retry: 'TRY AGAIN',
+            gameover_revive: 'WATCH AD TO REVIVE',
             // In-game text
             vanish: 'Vanish!',
             warning: 'WARNING! GAME OVER IN',
@@ -71,6 +72,7 @@ const I18N = {
             gameover_score: '今回のスコア',
             gameover_best: 'ハイスコア',
             gameover_retry: 'もう一度挑戦',
+            gameover_revive: '広告を見て復活！',
             // In-game text
             vanish: '消滅!',
             warning: '警告! ゲームオーバーまで',
@@ -105,6 +107,157 @@ const I18N = {
 
     init() {
         this.setLang(this._lang);
+    }
+};
+
+// --------------------------------------------------------------------------
+// 0.5. AdMob Manager (Safe Wrapper for Native Ads)
+// --------------------------------------------------------------------------
+const AdManager = {
+    isCapacitor: typeof window !== 'undefined' && !!window.Capacitor,
+    bannerVisible: false,
+    
+    get adMob() {
+        if (this.isCapacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
+            return window.Capacitor.Plugins.AdMob;
+        }
+        return null;
+    },
+
+    async init() {
+        if (!this.adMob) {
+            console.log("AdMob not available: running in browser or plugin not loaded.");
+            return;
+        }
+        try {
+            await this.adMob.initialize({
+                initializeOnJSInit: true
+            });
+            console.log("AdMob initialized successfully.");
+            
+            // Start showing the banner ad immediately
+            this.showBanner();
+        } catch (e) {
+            console.error("Error initializing AdMob:", e);
+        }
+    },
+
+    async showBanner() {
+        if (!this.adMob) return;
+        try {
+            await this.adMob.showBanner({
+                adId: 'ca-app-pub-3940256099942544/6300978111', // Test Banner ID
+                position: 'BOTTOM_CENTER',
+                margin: 0,
+                isTesting: true
+            });
+            this.bannerVisible = true;
+            
+            // Adjust layout spacing
+            const container = document.getElementById('app-container');
+            if (container) container.classList.add('has-banner-ad');
+            
+            console.log("Banner ad shown.");
+        } catch (e) {
+            console.error("Error showing banner:", e);
+        }
+    },
+
+    async hideBanner() {
+        if (!this.adMob) return;
+        try {
+            await this.adMob.removeBanner();
+            this.bannerVisible = false;
+            
+            const container = document.getElementById('app-container');
+            if (container) container.classList.remove('has-banner-ad');
+            
+            console.log("Banner ad hidden.");
+        } catch (e) {
+            console.error("Error hiding banner:", e);
+        }
+    },
+
+    async showInterstitial(callback) {
+        if (!this.adMob) {
+            console.log("AdMob not available: skipping Interstitial.");
+            if (callback) callback();
+            return;
+        }
+        try {
+            let adResolved = false;
+            const cleanupAndCall = () => {
+                if (adResolved) return;
+                adResolved = true;
+                dismissListener.then(l => l.remove());
+                failListener.then(l => l.remove());
+                if (callback) callback();
+            };
+
+            // Register ad events for resume on dismiss/failure
+            const dismissListener = this.adMob.addListener('onInterstitialAdDismissed', cleanupAndCall);
+            const failListener = this.adMob.addListener('onInterstitialAdFailedToLoad', cleanupAndCall);
+
+            await this.adMob.prepareInterstitial({
+                adId: 'ca-app-pub-3940256099942544/1033173712', // Test Interstitial ID
+                isTesting: true
+            });
+            await this.adMob.showInterstitial();
+            console.log("Interstitial ad shown.");
+        } catch (e) {
+            console.error("Error showing interstitial:", e);
+            if (callback) callback();
+        }
+    },
+
+    async showRewarded(onRewardEarned, onAdDismissedOrFailed) {
+        if (!this.adMob) {
+            console.log("AdMob not available: auto-rewarding for testing.");
+            if (onRewardEarned) onRewardEarned();
+            return;
+        }
+        
+        let rewardEarned = false;
+        let adResolved = false;
+        
+        const cleanup = () => {
+            adResolved = true;
+            rewardListener.then(l => l.remove());
+            dismissListener.then(l => l.remove());
+            failListener.then(l => l.remove());
+        };
+
+        try {
+            // Listen for the reward event
+            const rewardListener = this.adMob.addListener('onAdReward', (reward) => {
+                rewardEarned = true;
+            });
+            
+            const dismissListener = this.adMob.addListener('onRewardedAdDismissed', () => {
+                cleanup();
+                if (rewardEarned) {
+                    if (onRewardEarned) onRewardEarned();
+                } else {
+                    if (onAdDismissedOrFailed) onAdDismissedOrFailed();
+                }
+            });
+            
+            const failListener = this.adMob.addListener('onRewardedAdFailedToLoad', () => {
+                cleanup();
+                if (onAdDismissedOrFailed) onAdDismissedOrFailed();
+            });
+
+            await this.adMob.prepareRewardVideoAd({
+                adId: 'ca-app-pub-3940256099942544/5224354917', // Test Rewarded ID
+                isTesting: true
+            });
+            
+            await this.adMob.showRewardVideoAd();
+            console.log("Rewarded ad shown.");
+        } catch (e) {
+            console.error("Error showing rewarded ad:", e);
+            if (onAdDismissedOrFailed) onAdDismissedOrFailed();
+        }
     }
 };
 
@@ -440,6 +593,8 @@ class Game {
         this.particles = [];
         this.floatingTexts = [];
         this.isGameOver = false;
+        this.hasRevivedThisGame = false;
+        this.gameOversCount = 0;
         
         // ドロッパー状態
         this.currentDropperX = this.LOGICAL_W / 2;
@@ -1130,6 +1285,16 @@ class Game {
         document.getElementById('final-score').textContent = this.score;
         document.getElementById('final-best').textContent = this.bestScore;
         
+        // Show/hide revive button based on whether they have already revived in this game
+        const reviveBtn = document.getElementById('btn-revive');
+        if (reviveBtn) {
+            if (!this.hasRevivedThisGame && this.balls.length > 0) {
+                reviveBtn.style.display = 'block';
+            } else {
+                reviveBtn.style.display = 'none';
+            }
+        }
+        
         const modal = document.getElementById('modal-gameover');
         modal.classList.add('active');
     }
@@ -1150,12 +1315,70 @@ class Game {
         this.isGameOver = false;
         this.warningActive = false;
         this.warningTimeLeft = 1.5;
+        this.hasRevivedThisGame = false;
         
         document.getElementById('modal-gameover').classList.remove('active');
         
         this.updateHoldUI();
         this.generateNextBall();
         this.loadNextBall();
+    }
+
+    revive() {
+        // 1. Sort balls by y-coordinate ascending (highest balls first, i.e., smallest y)
+        this.balls.sort((a, b) => a.y - b.y);
+        
+        // 2. Delete top 30% of balls to free up container space
+        const deleteCount = Math.ceil(this.balls.length * 0.3);
+        this.balls.splice(0, deleteCount);
+        
+        // 3. Reset game over / warning state
+        this.isGameOver = false;
+        this.warningActive = false;
+        this.warningTimeLeft = 1.5;
+        this.hasRevivedThisGame = true;
+        this.alarmTimer = 0;
+        
+        // 4. Hide game over modal
+        document.getElementById('modal-gameover').classList.remove('active');
+        
+        // 5. Visual explosion effect in the center of the container
+        const midX = this.LOGICAL_W / 2;
+        const midY = 300;
+        this.createExplosion(midX, midY, 'rgba(0, 229, 255, 0.95)', 'annihilation');
+        this.triggerScreenShake(8, 0.3);
+        
+        // Floating Text
+        const message = I18N.lang === 'ja' ? '復活！' : 'REVIVED!';
+        this.floatingTexts.push(new FloatingText(midX, midY, message, '#ffcc00'));
+        
+        // 6. Play retro synth revival sound
+        const playTone = (freq, start, duration) => {
+            if (!synth.enabled) return;
+            synth.init();
+            const now = synth.ctx.currentTime;
+            let osc = synth.ctx.createOscillator();
+            let gain = synth.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + start);
+            gain.gain.setValueAtTime(0.12, now + start);
+            gain.gain.linearRampToValueAtTime(0.0, now + start + duration);
+            osc.connect(gain);
+            gain.connect(synth.ctx.destination);
+            osc.start(now + start);
+            osc.stop(now + start + duration);
+        };
+        // Arpeggio up
+        playTone(261.63, 0, 0.1);    // C4
+        playTone(329.63, 0.05, 0.1); // E4
+        playTone(392.00, 0.1, 0.1);  // G4
+        playTone(523.25, 0.15, 0.1); // C5
+        playTone(659.25, 0.2, 0.1);  // E5
+        playTone(783.99, 0.25, 0.15); // G5
+        playTone(1046.50, 0.3, 0.25); // C6
+        
+        // 7. Prevent time jump in physics
+        this.lastTime = performance.now();
     }
 
     // --------------------------------------------------------------------------
@@ -1471,12 +1694,36 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
     synth.playClick();
     document.getElementById('modal-start').classList.remove('active');
     gameInstance = new Game();
+    // Initialize AdMob and load banner immediately
+    AdManager.init();
 });
 
 // Retry button
 document.getElementById('btn-retry').addEventListener('click', () => {
     synth.playClick();
     if (gameInstance) {
-        gameInstance.restart();
+        gameInstance.gameOversCount++;
+        // Show Interstitial ad every 3rd Game Over restart
+        if (gameInstance.gameOversCount % 3 === 0) {
+            AdManager.showInterstitial(() => {
+                gameInstance.restart();
+            });
+        } else {
+            gameInstance.restart();
+        }
+    }
+});
+
+// Revive button (Watch rewarded ad to revive)
+document.getElementById('btn-revive').addEventListener('click', () => {
+    synth.playClick();
+    if (gameInstance) {
+        AdManager.showRewarded(() => {
+            // Success: Reward the player by reviving!
+            gameInstance.revive();
+        }, () => {
+            // Failure or user skipped
+            console.log("Rewarded ad skipped or failed to show.");
+        });
     }
 });
