@@ -779,13 +779,35 @@ class Game {
     }
 
     generateNextBall() {
-        // -3 ~ +3 のうち 0 を除いたランダムな数
-        const possibleVals = [-3, -2, -1, 1, 2, 3];
-        const val = possibleVals[Math.floor(Math.random() * possibleVals.length)];
-        
-        // ランダムな演算子
+        // Choose operator first
         const ops = ['+', '-', '×', '÷', '^'];
         const op = ops[Math.floor(Math.random() * ops.length)];
+        
+        let val;
+        if (op === '^') {
+            // Reduce probability of negative values (blue balls) for Power operator to make easy zeros rare
+            // 85% chance of positive (Red), 15% chance of negative (Blue)
+            if (Math.random() < 0.85) {
+                const posVals = [1, 2, 3];
+                val = posVals[Math.floor(Math.random() * posVals.length)];
+            } else {
+                const negVals = [-3, -2, -1];
+                val = negVals[Math.floor(Math.random() * negVals.length)];
+            }
+        } else if (op === '÷') {
+            // Reduce probability of larger numbers for Division operator
+            // 80% chance of absolute value 1 (1 or -1), 20% chance of larger values (2, 3, -2, -3)
+            if (Math.random() < 0.80) {
+                val = Math.random() < 0.5 ? 1 : -1;
+            } else {
+                const largerVals = [-3, -2, 2, 3];
+                val = largerVals[Math.floor(Math.random() * largerVals.length)];
+            }
+        } else {
+            // Normal generation: -3 ~ +3 except 0
+            const possibleVals = [-3, -2, -1, 1, 2, 3];
+            val = possibleVals[Math.floor(Math.random() * possibleVals.length)];
+        }
         
         this.nextBallInfo = { value: val, op: op };
         
