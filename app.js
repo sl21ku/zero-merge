@@ -505,6 +505,9 @@ class Ball {
 
         // 音声・衝突のクールダウン用
         this.lastCollisionSoundTime = 0;
+        
+        // 同じ演算子が複数ある場合の出現順位（最古が1）
+        this.operatorRank = 0;
     }
 
     static calculateRadius(val) {
@@ -1466,23 +1469,30 @@ class Game {
         }
 
         // 3. ボールの描画
-        // すべてのボールのisBaseをリセット
+        // すべてのボールのisBaseとoperatorRankをリセット
         for (let i = 0; i < this.balls.length; i++) {
             this.balls[i].isBase = false;
+            this.balls[i].operatorRank = 0;
         }
 
-        // 演算子ごとに最も古い（マージ時に左辺＝ベースになる）ボールを特定してisBase=trueにする
+        // 演算子ごとに最も古い（マージ時に左辺＝ベースになる）ボールを特定してisBase=trueにし、
+        // 同じ演算子が2つ以上ある場合は、出現順（年齢）の順位（1が最古）を設定
         const opsList = ['+', '-', '×', '÷', '^'];
         for (const op of opsList) {
             const matchingBalls = this.balls.filter(b => b.isDropped && b.op === op);
             if (matchingBalls.length > 0) {
-                let oldest = matchingBalls[0];
-                for (let i = 1; i < matchingBalls.length; i++) {
-                    if (matchingBalls[i].createdAt < oldest.createdAt) {
-                        oldest = matchingBalls[i];
+                // 出現順（年齢）で昇順ソート（最古＝値が小さい順）
+                matchingBalls.sort((a, b) => a.createdAt - b.createdAt);
+                
+                // 最古のボールをベース（左辺）に指定
+                matchingBalls[0].isBase = true;
+                
+                // 同じ演算子が2つ以上存在する場合のみ、順位番号を割り当てる
+                if (matchingBalls.length >= 2) {
+                    for (let r = 0; r < matchingBalls.length; r++) {
+                        matchingBalls[r].operatorRank = r + 1;
                     }
                 }
-                oldest.isBase = true;
             }
         }
 
@@ -1647,6 +1657,33 @@ class Game {
         this.ctx.fillStyle = symbolColor;
         this.ctx.font = `900 ${Math.round(badgeSize * 0.85)}px sans-serif`;
         this.ctx.fillText(ball.op, x, y + r * 0.42 + 0.5);
+
+        // ----------------------------------
+        // 出現順（年齢）を示す小さな番号バッジの描画（同じ演算子が2つ以上ある場合のみ）
+        // ----------------------------------
+        if (ball.operatorRank > 0) {
+            const badgeR = Math.max(7, r * 0.22);
+            // ボールの右上（-45度方向）に配置
+            const angle = -Math.PI / 4;
+            const bX = x + r * Math.cos(angle);
+            const bY = y + r * Math.sin(angle);
+
+            // バッジの背景（白枠の黒い円）
+            this.ctx.beginPath();
+            this.ctx.arc(bX, bY, badgeR, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.stroke();
+
+            // 順位番号の描画
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.font = `bold ${Math.round(badgeR * 1.3)}px 'DotGothic16', sans-serif`;
+            this.ctx.fillText(ball.operatorRank.toString(), bX, bY);
+        }
 
         this.ctx.restore();
     }
